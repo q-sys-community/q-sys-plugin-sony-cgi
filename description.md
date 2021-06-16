@@ -1,4 +1,4 @@
-# Avonic Camera via Visca
+# Sony Camera via Visca
 
 Plugin for Sony PTZ cameras using the VISCA control protocol.
 
