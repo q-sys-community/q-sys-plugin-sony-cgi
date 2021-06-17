@@ -87,18 +87,18 @@ function GetControls(props)
 		--[[{
 			Name = "CAM_Pan-Speed",
 			ControlType = "Knob",
-			ControlUnit = "Integer",
+			ControlUnit = "Percent",
 			Min = 1,
-			Max = 20,
+			Max = 100,
 			UserPin = true,
 			PinStyle = "Both"
-		},]]
-		--[[{
+		},
+		{
 			Name = "CAM_Zoom-Speed",
 			ControlType = "Knob",
-			ControlUnit = "Integer",
+			ControlUnit = "Percent",
 			Min = 1,
-			Max = 20,
+			Max = 100,
 			UserPin = true,
 			PinStyle = "Both"
 		},]]
@@ -175,50 +175,79 @@ end
 
 function GetControlLayout(props)
 	local ActiveRemote = props["page_index"].Value
-	local layout = {}
-	local graphics = {}
-	local btn_size = {48, 24}
-	local txt_size = {2*btn_size[1],btn_size[2]}
-	local x, y = 0, 0
 	preset_count = props["Preset Count"].Value
+
+	local layout = {}
+	local row_size = 6
+
+	local btn_size = {48, 24}
+	local title_size = {row_size * btn_size[1], btn_size[2]}
+	local txt_size = {2 * btn_size[1], btn_size[2]}
+	local status_groupbox_size = {title_size[1], 3 * btn_size[2]}
+	local ptz_groupbox_position = {0, title_size[2] + status_groupbox_size[2] + (0.5 * btn_size[2])}
+	local ptz_groupbox_size = {row_size * btn_size[1], 5 * btn_size[2]}
+	local presets_groupbox_position = {0, ptz_groupbox_position[2] + ptz_groupbox_size[2] + (0.5 * btn_size[2])}
+	local presets_groupbox_size = {
+		row_size * btn_size[1],
+		btn_size[2] + (2 * btn_size[2]) * (math.floor((props["Preset Count"].Value - 1) / row_size) + 1)
+	}
+
 	-- Status Info Section
-	layout["Online"] = {
-		PrettyName = "Online",
-		Style = "Indicator",
-		Color = {0, 255, 0},
-		OffColor = {200, 0, 0},
-		UnlinkOffColor = true,
-		Position = {x + 8, y + btn_size[2]},
-		Size = {x + btn_size[2],btn_size[2]}
-	}
-	layout["ConnectionState"] = {
-		PrettyName = "Connection State",
-		Style = "Text",
-		HTextAlign = "Left",
-		Padding = 5,
-		StrokeWidth = 0,
-		Position = btn_size,
-		Size = {x + 4*btn_size[1], y + btn_size[2]}
-	}
-	table.insert(
-		graphics,
+	graphics = {
 		{
-			Type = "GroupBox", -- This is the overall groupbox that will give the plugin a more 'contained' look
+			Type = "Header",
+			Text = "Sony PTZ Camera",
+			HTextAlign = "Center",
+			Color = Colors.black,
+			FontSize = 16,
+			Position = {0, 0},
+			Size = title_size
+		},
+		{
+			Type = "GroupBox",
 			Text = "Status",
 			HTextAlign = "Left",
 			Fill = Colors.White,
 			CornerRadius = 8,
 			StrokeColor = Colors.Black,
+			Color = Colors.Black,
 			StrokeWidth = 1,
-			Position = {x, y},
-			Size = {8*btn_size[1], 3*btn_size[2]} -- The width of the main GroupBox is dependent on how many channels the user specified. More channels means a wider group box
-		}
-	)
-	-- PTZ section
-	y = y + (3*btn_size[2]) + 16
-
-	table.insert(
-		graphics,
+			Position = {0, title_size[2]},
+			Size = status_groupbox_size
+		},
+		{
+			Type = "Text",
+			Text = "Online:",
+			Font = "Roboto",
+			FontSize = 12,
+			FontStyle = "Bold",
+			HTextAlign = "Right",
+			Color = Colors.Black,
+			Position = {0, title_size[2] + (0.5 * btn_size[2])},
+			Size = txt_size
+		},
+		{
+			Type = "Text",
+			Text = "IP Address:",
+			Font = "Roboto",
+			FontSize = 12,
+			FontStyle = "Bold",
+			HTextAlign = "Right",
+			Color = Colors.Black,
+			Position = {0, title_size[2] + (1.5 * btn_size[2])},
+			Size = txt_size
+		},
+		--[[{
+			Type = "Text",
+			Text = "Firmware:",
+			Font = "Roboto",
+			FontSize = 12,
+			FontStyle = "Bold",
+			HTextAlign = "Right",
+			Color = Colors.Black,
+			Position = {0, title_size[2] + (2.5 * btn_size[2])},
+			Size = txt_size
+		},]]
 		{
 			Type = "GroupBox", -- This is the overall groupbox that will give the plugin a more 'contained' look
 			Text = "PTZ",
@@ -226,13 +255,11 @@ function GetControlLayout(props)
 			Fill = Colors.White,
 			CornerRadius = 8,
 			StrokeColor = Colors.Black,
+			Color = Colors.Black,
 			StrokeWidth = 1,
-			Position = {x, y},
-			Size = {8*btn_size[1], 5*btn_size[2]}
-		}
-	)
-	table.insert(
-		graphics,
+			Position = ptz_groupbox_position,
+			Size = ptz_groupbox_size
+		},
 		{
 			Type = "Text",
 			Text = "Pan/Tilt:",
@@ -241,44 +268,9 @@ function GetControlLayout(props)
 			FontStyle = "Bold",
 			HTextAlign = "Right",
 			Color = Colors.Black,
-			Position = {x, y + btn_size[2]},
+			Position = {ptz_groupbox_position[1], ptz_groupbox_position[2] + btn_size[2]},
 			Size = txt_size
-		}
-	)
-	layout["PanTiltDrive-Up"] = {
-		PrettyName = "PTZ~Tilt Up",
-		Legend = "Up",
-		Style = "Button",
-		ButtonStyle = "Momentary",
-		Position = {x + txt_size[1]+0*btn_size[1], y + btn_size[2]},
-		Size = btn_size
-	}
-	layout["PanTiltDrive-Dn"] = {
-		PrettyName = "PTZ~Tilt Down",
-		Legend = "Down",
-		Style = "Button",
-		ButtonStyle = "Momentary",
-		Position = {x + txt_size[1]+1*btn_size[1], y + btn_size[2]},
-		Size = btn_size
-	}
-	layout["PanTiltDrive-Lt"] = {
-		PrettyName = "PTZ~Pan Left",
-		Legend = "Left",
-		Style = "Button",
-		ButtonStyle = "Momentary",
-		Position = {x + txt_size[1]+2*btn_size[1], y + btn_size[2]},
-		Size = btn_size
-	}
-	layout["PanTiltDrive-Rt"] = {
-		PrettyName = "PTZ~Pan Right",
-		Legend = "Right",
-		Style = "Button",
-		ButtonStyle = "Momentary",
-		Position = {x + txt_size[1]+3*btn_size[1], y + btn_size[2]},
-		Size = btn_size
-	}
-	table.insert(
-		graphics,
+		},
 		{
 			Type = "Text",
 			Text = "Zoom:",
@@ -287,29 +279,10 @@ function GetControlLayout(props)
 			FontStyle = "Bold",
 			HTextAlign = "Right",
 			Color = Colors.Black,
-			Position = {x, y + 2*btn_size[2]},
+			Position = {ptz_groupbox_position[1], ptz_groupbox_position[2] + (2 * btn_size[2])},
 			Size = txt_size
-		}
-	)
-	layout["CAM_Zoom-Z+"] = {
-		PrettyName = "PTZ~Zoom In",
-		Legend = "In",
-		Style = "Button",
-		ButtonStyle = "Momentary",
-		Position = {x + txt_size[1]+0*btn_size[1], y + 2*btn_size[2]},
-		Size = btn_size
-	}
-	layout["CAM_Zoom-Z-"] = {
-		PrettyName = "PTZ~Zoom Out",
-		Legend = "Out",
-		Style = "Button",
-		ButtonStyle = "Momentary",
-		Position = {x + txt_size[1]+1*btn_size[1], y + 2*btn_size[2]},
-		Size = btn_size
-	}
-	--[[table.insert(
-		graphics,
-		{
+		},
+		--[[{
 			Type = "Text",
 			Text = "Pan/Tilt Speed:",
 			Font = "Roboto",
@@ -317,22 +290,20 @@ function GetControlLayout(props)
 			FontStyle = "Bold",
 			HTextAlign = "Right",
 			Color = Colors.Black,
-			Position = {x, y + 3*btn_size[2]},
+			Position = {ptz_groupbox_position[1], ptz_groupbox_position[2] + (3 * btn_size[2])},
 			Size = txt_size
-		}
-	)
-	layout["CAM_Pan-Speed"] = {
-		PrettyName = "PTZ~Pan/Tilt Speed",
-		Style = "Text Field",
-		Margin = 2,
-		Position = {x + txt_size[1]+0*btn_size[1], y + 3*btn_size[2]},
-		Size = {2*btn_size[1], btn_size[2]}
-	}]]
-	-- Presets Section
-	y = y + (5*btn_size[2]) + 16
-	local row_size = 8
-	table.insert(
-		graphics,
+		},
+		{
+			Type = "Text",
+			Text = "Zoom Speed:",
+			Font = "Roboto",
+			FontSize = 12,
+			FontStyle = "Bold",
+			HTextAlign = "Right",
+			Color = Colors.Black,
+			Position = {ptz_groupbox_position[1], ptz_groupbox_position[2] + (4 * btn_size[2])},
+			Size = txt_size
+		},]]
 		{
 			Type = "GroupBox", -- This is the overall groupbox that will give the plugin a more 'contained' look
 			Text = "Presets",
@@ -340,20 +311,116 @@ function GetControlLayout(props)
 			Fill = Colors.White,
 			CornerRadius = 8,
 			StrokeColor = Colors.Black,
+			Color = Colors.Black,
 			StrokeWidth = 1,
-			Position = {x, y},
-			Size = {row_size*btn_size[1], 8 + btn_size[2]+(2*btn_size[2])*(math.floor((props["Preset Count"].Value-1)/row_size)+1)}
+			Position = presets_groupbox_position,
+			Size = presets_groupbox_size
 		}
-	)
+	}
+	layout["Online"] = {
+		PrettyName = "Online",
+		Style = "Indicator",
+		Color = {0, 255, 0},
+		OffColor = {200, 0, 0},
+		UnlinkOffColor = true,
+		Margin = 4,
+		Position = {txt_size[1], title_size[2] + (0.5 * btn_size[2])},
+		Size = {btn_size[2], btn_size[2]}
+	}
+	layout["ConnectionState"] = {
+		PrettyName = "Connection State",
+		Style = "Text",
+		HTextAlign = "Left",
+		Padding = 4,
+		StrokeWidth = 0,
+		Position = {txt_size[1], title_size[2] + (1.5 * btn_size[2])},
+		Size = {2 * btn_size[1], btn_size[2]}
+	}
+	--[[layout["FirmwareVersion"] = {
+		PrettyName = "Firmware",
+		Style = "Text",
+		HTextAlign = "Left",
+		Padding = 4,
+		StrokeWidth = 0,
+		Position = {txt_size[1], title_size[2] + (2.5 * btn_size[2])},
+		Size = {2 * btn_size[1], btn_size[2]}
+	}]]
+	-- PTZ section
+	layout["PanTiltDrive-Up"] = {
+		PrettyName = "PTZ~Tilt Up",
+		Legend = "Up",
+		Style = "Button",
+		ButtonStyle = "Momentary",
+		Position = {ptz_groupbox_position[1] + txt_size[1] + (0 * btn_size[1]), ptz_groupbox_position[2] + btn_size[2]},
+		Size = btn_size
+	}
+	layout["PanTiltDrive-Dn"] = {
+		PrettyName = "PTZ~Tilt Down",
+		Legend = "Down",
+		Style = "Button",
+		ButtonStyle = "Momentary",
+		Position = {ptz_groupbox_position[1] + txt_size[1] + (1 * btn_size[1]), ptz_groupbox_position[2] + btn_size[2]},
+		Size = btn_size
+	}
+	layout["PanTiltDrive-Lt"] = {
+		PrettyName = "PTZ~Pan Left",
+		Legend = "Left",
+		Style = "Button",
+		ButtonStyle = "Momentary",
+		Position = {ptz_groupbox_position[1] + txt_size[1] + (2 * btn_size[1]), ptz_groupbox_position[2] + btn_size[2]},
+		Size = btn_size
+	}
+	layout["PanTiltDrive-Rt"] = {
+		PrettyName = "PTZ~Pan Right",
+		Legend = "Right",
+		Style = "Button",
+		ButtonStyle = "Momentary",
+		Position = {ptz_groupbox_position[1] + txt_size[1] + (3 * btn_size[1]), ptz_groupbox_position[2] + btn_size[2]},
+		Size = btn_size
+	}
+	layout["CAM_Zoom-Z+"] = {
+		PrettyName = "PTZ~Zoom In",
+		Legend = "In",
+		Style = "Button",
+		ButtonStyle = "Momentary",
+		Position = {ptz_groupbox_position[1] + txt_size[1] + (0 * btn_size[1]), ptz_groupbox_position[2] + (2 * btn_size[2])},
+		Size = btn_size
+	}
+	layout["CAM_Zoom-Z-"] = {
+		PrettyName = "PTZ~Zoom Out",
+		Legend = "Out",
+		Style = "Button",
+		ButtonStyle = "Momentary",
+		Position = {ptz_groupbox_position[1] + txt_size[1] + (1 * btn_size[1]), ptz_groupbox_position[2] + (2 * btn_size[2])},
+		Size = btn_size
+	}
+	--[[layout["CAM_Pan-Speed"] = {
+		PrettyName = "PTZ Speed~Pan/Tilt",
+		Style = "Text Field",
+		Margin = 2,
+		Position = {ptz_groupbox_position[1] + txt_size[1] + 0 * btn_size[1], ptz_groupbox_position[2] + (3 * btn_size[2])},
+		Size = {2 * btn_size[1], btn_size[2]}
+	}
+	layout["CAM_Zoom-Speed"] = {
+		PrettyName = "PTZ Speed~Zoom",
+		Style = "Text Field",
+		Margin = 2,
+		Position = {ptz_groupbox_position[1] + txt_size[1] + 0 * btn_size[1], ptz_groupbox_position[2] + (4 * btn_size[2])},
+		Size = {2 * btn_size[1], btn_size[2]}
+	}]]
+	-- Presets Section
 	for i = 1, preset_count do -- For each preset
-  		local row = math.floor((i-1)/row_size )+1
-  		local column = i-(row-1)*row_size
+		local row = math.floor((i - 1) / row_size) + 1
+		local column = i - (row - 1) * row_size
 		layout["CAM_Memory-Recall " .. i] = {
 			PrettyName = "Preset Recall~" .. (i - 1),
 			Style = "Button",
 			Color = Colors.Green,
 			Legend = "Recall " .. (i - 1),
-			Position = {x + btn_size[1]*(column-1), y + (2*btn_size[2]*row)-btn_size[2]},
+			Position = {
+				presets_groupbox_position[1] + btn_size[1] * (column - 1),
+				presets_groupbox_position[2] + (2 * btn_size[2] * row) - btn_size[2]
+			},
 			Size = btn_size
 		}
 		layout["CAM_Memory-Set " .. i] = {
@@ -361,7 +428,10 @@ function GetControlLayout(props)
 			Style = "Button",
 			Color = Colors.Red,
 			Legend = "Save " .. (i - 1),
-			Position = {x + btn_size[1]*(column-1), y + (2*btn_size[2]*row)},
+			Position = {
+				presets_groupbox_position[1] + btn_size[1] * (column - 1),
+				presets_groupbox_position[2] + (2 * btn_size[2] * row)
+			},
 			Size = btn_size
 		}
 	end
