@@ -4,8 +4,8 @@
 PluginInfo = {
 	Name = "Sony~Camera (0.0.0.0-master)", -- The tilde here indicates folder structure in the Shematic Elements pane
 	Version = "0.0.0.0-master",
-	Id = "qsysc.sony.camera.visca.0.0.0.0-master", -- show this is just a unique id. Show some commented out 'fun' unique ids
-	Description = "Plugin for control of an Sony Camera using the VISCA protocol",
+	Id = "qsysc.sony.camera.cgi.0.0.0.0-master", -- show this is just a unique id. Show some commented out 'fun' unique ids
+	Description = "Plugin for control of an Sony Camera using the CGI protocol",
 	ShowDebug = true
 }
 
@@ -22,9 +22,6 @@ preset_count = 127
 pt_speed = "\x08" -- maximum \x11 (17)
 --zoom_speed = "\x07" -- maximum \x07 (7)
 
--- Static properties
-visca_address = 1
-
 function GetColor(props)
     return Colors.Black
 end
@@ -37,13 +34,13 @@ function GetProperties()
 		{
 			Name = "IP Host",
 			Type = "string",
-			Value = "127.0.0.1"
+			Value = "10.174.0.240"
 		},
 		{
 			Name = "IP Port",
 			Type = "integer",
-			Value = 52381, -- THIS MAY BE THE ONLY PORT, CONFIRM WHEN TESTING AGAINST REAL DEVICE AND REMOVE OPTION IF OBSOLETE
-			Min = 1024,
+			Value = 80,
+			Min = 80,
 			Max = 65535
 		},
 		{
@@ -450,18 +447,21 @@ if Controls then
 	-- Once you are confident in your script, simply copy and paste that script here, and then you can fully test the plugin completely
 	-- Don't forget to comment out your code pin and hide the debug before distributing!
 
-	-- Comms Variable
-	Rx = ""
+	function setConnState(msg)
+		Controls["ConnectionState"].String = string.format("[%s:%d] %s",Properties["IP Host"].Value,Properties["IP Port"].Value,msg)
+	end
 
-	-- Build TCP Client
-	conn = TcpSocket.New()
-	conn.ReadTimeout = 0
-	conn.WriteTimeout = 0
-	conn.ReconnectTimeout = 5
+	setConnState("Connecting")
+	-- Create and setup the Communications Timeout
+	timerComms = Timer.New()
+	timerComms.EventHandler = function(timer)
+		timer:Stop()
+		Controls.Online.Boolean = false
+		setConnState("Timed Out")
+	end
 
 	-- Create and setup Polling
 	timerPoll = Timer.New()
-
 	timerPoll.EventHandler = function(timer)
 		fnPoll()
 	end
@@ -471,87 +471,72 @@ if Controls then
 		timerPoll:Start(20)
 	end
 
-	function fnPoll()
-		-- Poll the Info
-		fnSend("") --
-	end
-
-	-- Data Sending Helper Function
-	function fnSend(cmd)
-		if conn.IsConnected then
-			-- Send to device
-			print("-->Visca::" .. cmd)
-			conn:Write("\x81" .. cmd .. "\xFF")
-			-- Reset Polling
-			fnInitPoll()
+	function httpFeedbackHandler(tbl, code, data, err, headers)
+		print(string.format( "HTTP response from '%s': Return Code=%i; Error=%s", tbl.Url, code, err or "None" ) )
+		if code == 200 then
+			timerComms:Stop()
+			Controls.Online.Boolean = true
+			setConnState("Connected")
+			timerComms:Start(45)
 		end
-	end
-	function setConnState(msg)
-		Controls["ConnectionState"].String =
-			"[" .. Properties["IP Host"].Value .. ":" .. Properties["IP Port"].Value .. "] " .. msg
-	end
-	-- Setup Utility Callbacks as required
-	conn.Connected = function(conn)
-		setConnState("Connected")
-		fnPoll()
-	end
-	conn.Reconnect = function(conn)
-		setConnState("Reconnect")
-	end
-	conn.Closed = function(conn)
-		setConnState("Closed")
-		Controls.Online.Boolean = false
-	end
-	conn.Error = function(conn, err)
-		setConnState("Error")
-	end
-	conn.Timeout = function(conn, err)
-		setConnState("Timeout")
-	end
-	-- Helper Function - Open TCP Connection
-	function fnConnect()
-		-- Open Connection
-		conn:Connect(Properties["IP Host"].Value, Properties["IP Port"].Value)
-		-- Set IP Host value
-		setConnState("Connecting")
+		-- Process 'data'
 	end
 
-	-- Create and setup the Communications Timeout
-	timerComms = Timer.New()
-	timerComms.EventHandler = function(timer)
-		timer:Stop()
-		Controls.Online.Boolean = false
-		print("Connection Timed Out")
-		conn:Disconnect()
-		fnConnect()
-	end
-
-	conn.Data = function(conn)
-		Rx = Rx .. conn:Read(conn.BufferLength)
-		while Rx:find("\xFF") do
-			Packet = Rx:sub(1, Rx:find("\xFF"))
-			Rx = Rx:sub(#Packet + 1)
-			-- Trim Packet
+	function httpCommandHandler(tbl, code, data, err, headers)
+		print(string.format( "HTTP response from '%s': Return Code=%i; Error=%s", tbl.Url, code, err or "None" ) )
+		if code == 204 then
 			timerComms:Stop()
 			Controls.Online.Boolean = true
 			timerComms:Start(45)
 		end
-		-- Data Processing here
+	end
+
+	function fnPoll()
+		-- Poll the General Info
+		HttpClient.Download { 
+			Url = string.format("http://%s/command/inquiry.cgi?inq=ptzf",Properties["IP Host"].Value),
+			Timeout = 5,
+			User = "admin",
+			Password = "RedBull1987",
+			EventHandler = httpFeedbackHandler -- Set Connection ON / Timer start here
+		  }
+		-- Poll the PTZF info
+		HttpClient.Download { 
+			Url = string.format("http://%s/command/inquiry.cgi?inq=ptzf",Properties["IP Host"].Value),
+			Timeout = 5,
+			User = "admin",
+			Password = "RedBull1987",
+			EventHandler = httpFeedbackHandler
+		  }
+		  fnInitPoll()
+	end
+
+	-- Data Sending Helper Function
+	function fnFireForget(path)
+		-- Do without processing
+		HttpClient.Download { 
+			Url = string.format("http://%s/%s",Properties["IP Host"].Value,path),
+			Timeout = 5,
+			User = "admin",
+			Password = "RedBull1987",
+			EventHandler = httpCommandHandler
+		  }
+		  fnInitPoll()
 	end
 
 	function goPanTilt(dir)
-		if dir == "" then
-			fnSend("\x01\x06\x01\x06\x06\x03\x03") -- Stop
-		else
-			fnSend("\x01\x06\x01" .. pt_speed .. pt_speed .. dir) -- Move
+		if dir == "" then -- Stop
+			fnFireForget("command/ptzf.cgi?cancel=on") -- Stop
+		else -- Move
+			fnFireForget(string.format("command/ptzf.cgi?move=%s,10",dir)) -- Move
 		end
 	end
 
 	function goZoom(dir)
 		if dir == "" then
-			fnSend("\x01\x04\x07\x00") -- Stop
+			fnFireForget("command/ptzf.cgi?cancel=on") -- Stop
 		else
-			fnSend("\x01\x04\x07" .. dir) -- Move
+			fnFireForget(string.format("command/ptzf.cgi?move=%s,4",dir)) -- Move
 		end
 	end
 	for k, v in pairs(Controls) do
@@ -559,13 +544,13 @@ if Controls then
 			v.EventHandler = function(changedControl)
 				if changedControl.Boolean == true then
 					if k:sub(-2, -1) == "Up" then
-						goPanTilt("\x03\01") -- Up
+						goPanTilt("up") -- Up
 					elseif k:sub(-2, -1) == "Dn" then
-						goPanTilt("\x03\02") -- Down
+						goPanTilt("down") -- Down
 					elseif k:sub(-2, -1) == "Lt" then
-						goPanTilt("\x01\03") -- Left
+						goPanTilt("left") -- Left
 					elseif k:sub(-2, -1) == "Rt" then
-						goPanTilt("\x02\03") -- Right
+						goPanTilt("right") -- Right
 					end
 				else
 					goPanTilt("") -- Stop
@@ -575,9 +560,9 @@ if Controls then
 			v.EventHandler = function(changedControl)
 				if changedControl.Boolean == true then
 					if k:sub(-2, -1) == "Z+" then
-						goZoom("\x02") -- In
+						goZoom("tele") -- In
 					elseif k:sub(-2, -1) == "Z-" then
-						goZoom("\x03") -- Out
+						goZoom("wide") -- Out
 					end
 				else
 					goZoom("") -- Stop
@@ -587,16 +572,15 @@ if Controls then
 	end
 	for i = 1, preset_count do
 		Controls["CAM_Memory-Set"][i].EventHandler = function()
-			fnSend("\x01\x04\x3F\x01" .. string.format("%x", (i - 1)))
+			fnFireForget(string.format("command/presetposition.cgi?PresetSet=%d,Preset%0d,on",i,i))
 		end
 		Controls["CAM_Memory-Recall"][i].EventHandler = function()
-			fnSend("\x01\x04\x3F\x02" .. string.format("%x", (i - 1)))
+			fnFireForget(string.format("command/presetposition.cgi?PresetCall=%d,%d",i,10))
 		end
 	end
 	--[[Controls["CAM_Pan-Speed"].EventHandler = function()
 		pt_speed = string.format("%X", Controls["CAM_Pan-Speed"].Value)
 		print(pt_speed)
 	end]]
-	-- Startup
-	fnConnect()
+	fnPoll()
 end

@@ -2,20 +2,20 @@
 <!-- Initially generated manually using `nuget spec`-->
 <package >
   <metadata>
-    <id>Sony-Visca</id>
+    <id>Sony-CGI</id>
     <version>0.0.0.0-master</version>
-    <title>Sony VISCA PTZ</title>
+    <title>Sony CGI PTZ</title>
     <authors>Solo Works London</authors>
     <owners>Q-Sys Community</owners>
     <license type="expression">GPL-3.0-or-later</license>
-    <projectUrl>https://github.com/q-sys-community/q-sys-plugin-sony-visca</projectUrl>
+    <projectUrl>https://github.com/q-sys-community/q-sys-plugin-sony-cgi</projectUrl>
     <iconUrl>http://content/images/sony_logo.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Package description</description>
     <releaseNotes>Summary of changes made in this release of the package.</releaseNotes>
     <copyright>Copyright 2020</copyright>
-    <tags>Sony PTZ Camera VISCA</tags>
-    <summary>A control plugin for Sony PTZ cameras using the VISCA protocol</summary>
+    <tags>Sony PTZ Camera CGI</tags>
+    <summary>A control plugin for Sony PTZ cameras using the CGI protocol</summary>
   </metadata>
   <files>
     <file src="content\*" target="" />

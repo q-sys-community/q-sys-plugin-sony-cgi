@@ -1,2 +1,7 @@
-# q-sys-plugin-sony-visca
-VISCA protocol for Sony PTZ cameras
+# q-sys-plugin-sony-cgi
+
+CGI protocol for Sony PTZ cameras
+
+# Models
+
+ - Sony SRG-X120WC (SRGX120WC) HD
