@@ -37,6 +37,16 @@ function GetProperties()
 			Value = "192.168.0.100"
 		},
 		{
+			Name = "Username",
+			Type = "string",
+			Value = ""
+		},
+		{
+			Name = "Password",
+			Type = "string",
+			Value = ""
+		},
+		{
 			Name = "IP Port",
 			Type = "integer",
 			Value = 80,
@@ -496,16 +506,16 @@ if Controls then
 		HttpClient.Download { 
 			Url = string.format("http://%s/command/inquiry.cgi?inq=ptzf",Properties["IP Host"].Value),
 			Timeout = 5,
-			User = "admin",
-			Password = "RedBull1987",
+			User = Properties["Username"].Value,
+			Password = Properties["Password"].Value,
 			EventHandler = httpFeedbackHandler -- Set Connection ON / Timer start here
 		  }
 		-- Poll the PTZF info
 		HttpClient.Download { 
 			Url = string.format("http://%s/command/inquiry.cgi?inq=ptzf",Properties["IP Host"].Value),
 			Timeout = 5,
-			User = "admin",
-			Password = "RedBull1987",
+			User = Properties["Username"].Value,
+			Password = Properties["Password"].Value,
 			EventHandler = httpFeedbackHandler
 		  }
 		  fnInitPoll()
@@ -517,8 +527,8 @@ if Controls then
 		HttpClient.Download { 
 			Url = string.format("http://%s/%s",Properties["IP Host"].Value,path),
 			Timeout = 5,
-			User = "admin",
-			Password = "RedBull1987",
+			User = Properties["Username"].Value,
+			Password = Properties["Password"].Value,
 			EventHandler = httpCommandHandler
 		  }
 		  fnInitPoll()
